@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5" />
+  <title>StudyVault — Learn, Buy Books, Master Any Subject</title>
+  <meta name="description" content="StudyVault is an advanced learning and digital bookstore platform. Purchase books, read in-app, study with AI, and track progress." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 300: '#93c5fd',
+              400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8',
+              800: '#1e40af', 900: '#1e3a8a', 950: '#172554'
+            }
+          },
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: Inter, system-ui, sans-serif; }
+    .fade { animation: fadeIn .3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    .logo-mark { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%); }
+    .hero-bg { background: radial-gradient(ellipse at top, #1e3a8a 0%, #0f172a 55%); }
+    .card-hover:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -8px rgb(37 99 235 / 0.25); }
+    .reader-page { min-height: 70vh; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: #93c5fd; border-radius: 99px; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 antialiased">
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7.26.0/babel.min.js"></script>
+
+<script type="text/babel">
+const { useState, useEffect, useMemo, useRef } = React;
+
+/* ========== APP CONFIG ==========
+   Optional: paste your Gemini API key once here so ALL users get real AI
+   without each person adding a key. Leave empty for built-in smart responses.
+   Get key: https://aistudio.google.com/apikey
+*/
+const APP_CONFIG = {
+  GEMINI_MODEL: 'gemini-2.0-flash',
+  APP_NAME: 'StudyVault',
+  CURRENCY: 'USD',
+  ADMIN_EMAIL: 'adminpresident@gmail.com',
+  ADMIN_PASS: 'LOB419LOB419'
+};
+
+const DB_KEY = 'studyvault_pro_v1';
+
+const SEED_BOOKS = [
+  {
+    id: 'b1',
+    title: 'Cell Biology Mastery',
+    author: 'Dr. Amina Okonkwo',
+    category: 'Biology',
+    price: 12.99,
+    cover: '🧬',
+    description: 'A complete guide to cell structure, organelles, membranes, and cellular energy. Written for secondary and early university students who want clarity without oversimplification.',
+    pages: 186,
+    rating: 4.8,
+    content: `# Cell Biology Mastery\n\n## Chapter 1 — Introduction to Cells\nCells are the basic unit of life. Every living organism is made of one or more cells. This chapter explains why cell theory matters and how scientists discovered the microscopic world.\n\n### Learning objectives\n- State the three principles of cell theory\n- Distinguish prokaryotic and eukaryotic cells\n- Explain why cells are limited in size\n\n## Chapter 2 — Cell Theory\n1. All living things are composed of cells.\n2. The cell is the basic unit of structure and function.\n3. All cells arise from pre-existing cells.\n\nThese principles form the foundation of modern biology.\n\n## Chapter 3 — Cell Structure\nEukaryotic cells contain membrane-bound organelles: nucleus, mitochondria, endoplasmic reticulum, Golgi apparatus, lysosomes, and more. Each organelle has specialized roles.\n\n## Chapter 4 — The Cell Membrane\nThe phospholipid bilayer regulates what enters and leaves the cell. Proteins embedded in the membrane act as channels, receptors, and anchors.\n\n## Chapter 5 — Mitochondria\nOften called the powerhouse of the cell, mitochondria produce ATP through cellular respiration. They have their own DNA and double membrane.\n\n## Chapter 6 — Practice & Review\nSummarize each organelle in one sentence. Draw a labeled eukaryotic cell. Explain diffusion versus active transport.`
+  },
+  {
+    id: 'b2',
+    title: 'Foundations of Chemistry',
+    author: 'Prof. James Rivera',
+    category: 'Chemistry',
+    price: 14.50,
+    cover: '⚗️',
+    description: 'Atoms, bonding, reactions, and stoichiometry explained with worked examples and exam-focused summaries.',
+    pages: 220,
+    rating: 4.7,
+    content: `# Foundations of Chemistry\n\n## Chapter 1 — Atomic Structure\nAtoms consist of protons, neutrons, and electrons. The atomic number equals protons; mass number is protons plus neutrons.\n\n## Chapter 2 — The Periodic Table\nElements are arranged by atomic number. Groups share similar chemical properties; periods show trends in radius and electronegativity.\n\n## Chapter 3 — Chemical Bonding\nIonic bonds transfer electrons; covalent bonds share electrons. Metallic bonding explains conductivity in metals.\n\n## Chapter 4 — Chemical Reactions\nBalance equations, identify reaction types, and calculate limiting reagents.\n\n## Chapter 5 — Stoichiometry\nMole concept, molar mass, and quantitative problem solving with step-by-step methods.`
+  },
+  {
+    id: 'b3',
+    title: 'Algebra & Problem Solving',
+    author: 'Sarah Chen',
+    category: 'Mathematics',
+    price: 9.99,
+    cover: '📐',
+    description: 'Linear equations, quadratics, inequalities, and word problems with a problem-solving framework you can reuse in every exam.',
+    pages: 160,
+    rating: 4.9,
+    content: `# Algebra & Problem Solving\n\n## Chapter 1 — Linear Equations\nSolve for x using inverse operations. Check solutions by substitution.\n\n## Chapter 2 — Quadratics\nFactoring, completing the square, and the quadratic formula.\n\n## Chapter 3 — Inequalities\nGraph solution sets on a number line. Reverse the inequality when multiplying by a negative.\n\n## Chapter 4 — Word Problems\nTranslate language into equations. Define variables clearly before solving.`
+  },
+  {
+    id: 'b4',
+    title: 'World History Essentials',
+    author: 'Marcus Adeyemi',
+    category: 'History',
+    price: 11.00,
+    cover: '🌍',
+    description: 'Major civilizations, revolutions, and global conflicts — structured timelines and cause-effect analysis for serious learners.',
+    pages: 240,
+    rating: 4.6,
+    content: `# World History Essentials\n\n## Chapter 1 — Early Civilizations\nMesopotamia, Egypt, Indus Valley, and China developed writing, law, and urban planning.\n\n## Chapter 2 — Classical Empires\nGreece, Rome, Persia, and Maurya shaped political ideas still studied today.\n\n## Chapter 3 — Revolutions\nScientific, industrial, and political revolutions transformed societies between the 17th and 19th centuries.\n\n## Chapter 4 — The 20th Century\nWorld wars, decolonization, and the Cold War redefined global power.`
+  },
+  {
+    id: 'b5',
+    title: 'Physics: Motion & Energy',
+    author: 'Elena Petrova',
+    category: 'Physics',
+    price: 13.25,
+    cover: '⚡',
+    description: 'Kinematics, forces, work, energy, and momentum with diagrams and calculation practice.',
+    pages: 198,
+    rating: 4.8,
+    content: `# Physics: Motion & Energy\n\n## Chapter 1 — Describing Motion\nDisplacement, velocity, and acceleration. Interpret motion graphs.\n\n## Chapter 2 — Newton’s Laws\nInertia, F = ma, and action-reaction pairs with everyday examples.\n\n## Chapter 3 — Work & Energy\nWork-energy theorem, kinetic and potential energy, conservation of energy.\n\n## Chapter 4 — Momentum\nImpulse, collisions, and conservation of momentum.`
+  },
+  {
+    id: 'b6',
+    title: 'Academic Writing Handbook',
+    author: 'Olivia Grant',
+    category: 'Skills',
+    price: 8.50,
+    cover: '✍️',
+    description: 'Essay structure, thesis statements, citations, and revision strategies for clear, persuasive academic writing.',
+    pages: 120,
+    rating: 4.5,
+    content: `# Academic Writing Handbook\n\n## Chapter 1 — Planning\nUnderstand the prompt. Brainstorm. Outline before you draft.\n\n## Chapter 2 — Thesis & Structure\nA strong thesis is specific and arguable. Body paragraphs use topic sentences and evidence.\n\n## Chapter 3 — Style & Clarity\nPrefer active voice. Cut filler. Vary sentence length.\n\n## Chapter 4 — Revision\nEdit for argument, then clarity, then grammar. Read aloud.`
+  }
+];
+
+function loadDB() {
+  try {
+    const raw = localStorage.getItem(DB_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch { return null; }
+}
+function saveDB(db) {
+  localStorage.setItem(DB_KEY, JSON.stringify(db));
+}
+function defaultDB() {
+  return {
+    users: [],
+    orders: [],
+    books: SEED_BOOKS,
+    releases: {}, // userId -> { bookId: { released: true, releasedAt } }
+    studySessions: [],
+    settings: {}
+  };
+}
+function uid() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
+
+async function geminiGenerate(prompt, system) {
+  try {
+    const res = await fetch('/api/gemini', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prompt,
+        system: system || 'You are StudyVault AI Tutor. Be accurate, structured, and encouraging. Answer the student directly with clear detail.',
+        model: APP_CONFIG.GEMINI_MODEL
+      })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const msg = data.error || ('API error ' + res.status);
+      if (res.status === 404) {
+        return '**AI is not connected yet**\n\nThe /api/gemini route was not found on this deployment.\n\n1. Make sure your GitHub repo has the folder **api** with file **gemini.js**\n2. Import the repo on Vercel (not static-only upload)\n3. Add env variable **GEMINI_API_KEY**\n4. Redeploy';
+      }
+      return '**AI error**\n\n' + msg;
+    }
+    if (!data.text) return smartFallback(prompt);
+    return data.text;
+  } catch (err) {
+    return '**AI request failed**\n\n' + (err.message || String(err)) + '\n\nCheck that GEMINI_API_KEY is set in Vercel and the project was redeployed.';
+  }
+}
+
+function smartFallback(prompt) {
+  const p = prompt.toLowerCase();
+  if (p.includes('summar')) {
+    return '**Summary**\n\n1. Identify the main claim or topic.\n2. List 3–5 supporting points from the material.\n3. Note key terms and definitions.\n4. End with one sentence on why it matters for exams.\n\nTip: Write the summary in your own words — that is the best test of understanding.';
+  }
+  if (p.includes('quiz') || p.includes('question')) {
+    return '**Practice Question**\n\nWhat is the most effective way to study a new chapter?\n\nA) Read once quickly\nB) Explain the ideas out loud in your own words\nC) Highlight every sentence\nD) Skip to the end\n\n**Answer:** B — Teaching or explaining forces deeper processing than passive reading.';
+  }
+  if (p.includes('explain') || p.includes('tutor')) {
+    return '**AI Tutor Explanation**\n\nStart with the core definition in one sentence. Then add one concrete example from daily life. Finally, connect the idea to what you already know.\n\nIf a step is unclear, isolate that step and rephrase it more simply. Mastery comes from repeated, active explanation — not from rereading alone.';
+  }
+  return '**StudyVault AI**\n\nI can help you summarize chapters, generate practice questions, and explain difficult ideas. Open a purchased book in your library, or paste a topic and ask for an explanation, summary, or quiz.\n\n(For live Gemini answers across all users, the platform owner can set GEMINI_API_KEY in the app configuration.)';
+}
+
+/* ===== UI PRIMITIVES ===== */
+function Logo({ size = 'md' }) {
+  const s = size === 'lg' ? 'w-12 h-12 text-xl' : size === 'sm' ? 'w-8 h-8 text-sm' : 'w-10 h-10 text-base';
+  return (
+    <div className={`${s} logo-mark rounded-xl flex items-center justify-center text-white font-extrabold shadow-lg shadow-blue-900/30 relative overflow-hidden`}>
+      <span className="relative z-10">SV</span>
+      <div className="absolute inset-0 opacity-30" style={{ background: 'repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,.15) 4px, rgba(255,255,255,.15) 8px)' }} />
+    </div>
+  );
+}
+
+function Btn({ children, onClick, variant = 'primary', className = '', disabled, type = 'button', size = 'md' }) {
+  const base = 'inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition focus:outline-none focus:ring-2 focus:ring-brand-500/40 disabled:opacity-50 disabled:cursor-not-allowed';
+  const sizes = { sm: 'px-3 py-1.5 text-xs', md: 'px-4 py-2.5 text-sm', lg: 'px-6 py-3 text-base' };
+  const variants = {
+    primary: 'bg-brand-600 text-white hover:bg-brand-700 shadow-md shadow-brand-600/20',
+    secondary: 'bg-brand-900 text-white hover:bg-brand-950',
+    outline: 'border-2 border-brand-200 text-brand-800 bg-white hover:bg-brand-50',
+    ghost: 'text-slate-600 hover:bg-slate-100',
+    danger: 'bg-red-600 text-white hover:bg-red-700',
+    soft: 'bg-brand-50 text-brand-700 hover:bg-brand-100'
+  };
+  return (
+    <button type={type} disabled={disabled} onClick={onClick} className={`${base} ${sizes[size]} ${variants[variant]} ${className}`}>{children}</button>
+  );
+}
+
+function Card({ children, className = '' }) {
+  return <div className={`bg-white rounded-2xl border border-slate-200/80 shadow-sm ${className}`}>{children}</div>;
+}
+
+function Input({ label, ...props }) {
+  return (
+    <div className="space-y-1.5">
+      {label && <label className="block text-sm font-medium text-slate-700">{label}</label>}
+      <input className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none text-sm" {...props} />
+    </div>
+  );
+}
+
+function Textarea({ label, ...props }) {
+  return (
+    <div className="space-y-1.5">
+      {label && <label className="block text-sm font-medium text-slate-700">{label}</label>}
+      <textarea className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none text-sm min-h-[100px]" {...props} />
+    </div>
+  );
+}
+
+function Badge({ children, color = 'blue' }) {
+  const map = {
+    blue: 'bg-brand-50 text-brand-700',
+    green: 'bg-emerald-50 text-emerald-700',
+    amber: 'bg-amber-50 text-amber-800',
+    red: 'bg-red-50 text-red-700',
+    slate: 'bg-slate-100 text-slate-700'
+  };
+  return <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold ${map[color]}`}>{children}</span>;
+}
+
+/* ===== MAIN APP ===== */
+function App() {
+  const [db, setDb] = useState(() => loadDB() || defaultDB());
+  const [session, setSession] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(DB_KEY + '_session')) || null; } catch { return null; }
+  });
+  const [page, setPage] = useState('home');
+  const [toast, setToast] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [selectedBook, setSelectedBook] = useState(null);
+  const [readerBook, setReaderBook] = useState(null);
+  const [cart, setCart] = useState([]);
+  const [search, setSearch] = useState('');
+  const [catFilter, setCatFilter] = useState('All');
+  const [aiInput, setAiInput] = useState('');
+  const [aiOut, setAiOut] = useState('');
+  const [authForm, setAuthForm] = useState({ name: '', email: '', password: '' });
+  const [adminTab, setAdminTab] = useState('overview');
+  const [releaseForm, setReleaseForm] = useState({ userId: '', bookId: '', note: '' });
+  const [newBook, setNewBook] = useState({ title: '', author: '', category: 'General', price: '', description: '', content: '', cover: '📘' });
+
+  useEffect(() => { saveDB(db); }, [db]);
+  useEffect(() => {
+    if (session) localStorage.setItem(DB_KEY + '_session', JSON.stringify(session));
+    else localStorage.removeItem(DB_KEY + '_session');
+  }, [session]);
+
+  const notify = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
+
+  const isAdmin = session?.role === 'admin';
+  const user = session?.role === 'user' ? db.users.find(u => u.id === session.userId) : null;
+
+  const categories = useMemo(() => ['All', ...new Set(db.books.map(b => b.category))], [db.books]);
+  const filteredBooks = db.books.filter(b => {
+    const q = search.toLowerCase();
+    const matchQ = !q || b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q) || b.description.toLowerCase().includes(q);
+    const matchC = catFilter === 'All' || b.category === catFilter;
+    return matchQ && matchC;
+  });
+
+  const userOrders = user ? db.orders.filter(o => o.userId === user.id && o.status === 'paid') : [];
+  const ownedBookIds = new Set(userOrders.flatMap(o => o.items.map(i => i.bookId)));
+  const releasedForUser = user ? (db.releases[user.id] || {}) : {};
+
+  function go(p) { setPage(p); window.scrollTo(0, 0); }
+
+  /* Auth */
+  function handleSignup(e) {
+    e.preventDefault();
+    if (db.users.some(u => u.email.toLowerCase() === authForm.email.toLowerCase())) {
+      notify('Email already registered'); return;
+    }
+    if (authForm.email.toLowerCase() === APP_CONFIG.ADMIN_EMAIL.toLowerCase()) {
+      notify('This email is reserved'); return;
+    }
+    const u = {
+      id: uid(), name: authForm.name, email: authForm.email.toLowerCase(),
+      password: authForm.password, createdAt: new Date().toISOString(),
+      lastLogin: new Date().toISOString()
+    };
+    setDb(d => ({ ...d, users: [...d.users, u] }));
+    setSession({ role: 'user', userId: u.id });
+    notify('Account created');
+    go('dashboard');
+  }
+
+  function handleLogin(e) {
+    e.preventDefault();
+    const email = authForm.email.trim().toLowerCase();
+    const pass = authForm.password;
+    if (email === APP_CONFIG.ADMIN_EMAIL.toLowerCase() && pass === APP_CONFIG.ADMIN_PASS) {
+      setSession({ role: 'admin' });
+      notify('Admin signed in');
+      go('admin');
+      return;
+    }
+    const u = db.users.find(x => x.email === email && x.password === pass);
+    if (!u) { notify('Invalid email or password'); return; }
+    setDb(d => ({
+      ...d,
+      users: d.users.map(x => x.id === u.id ? { ...x, lastLogin: new Date().toISOString() } : x)
+    }));
+    setSession({ role: 'user', userId: u.id });
+    notify('Welcome back');
+    go('dashboard');
+  }
+
+  function logout() {
+    setSession(null);
+    setCart([]);
+    go('home');
+    notify('Signed out');
+  }
+
+  /* Cart & purchase */
+  function addToCart(book) {
+    if (!session || isAdmin) { notify('Please sign in as a student to purchase'); go('login'); return; }
+    if (ownedBookIds.has(book.id)) { notify('You already own this book'); return; }
+    if (cart.some(c => c.id === book.id)) { notify('Already in cart'); return; }
+    setCart(c => [...c, book]);
+    notify('Added to cart');
+  }
+
+  function checkout() {
+    if (!user || cart.length === 0) return;
+    const order = {
+      id: uid(),
+      userId: user.id,
+      userEmail: user.email,
+      userName: user.name,
+      items: cart.map(b => ({ bookId: b.id, title: b.title, price: b.price })),
+      total: cart.reduce((s, b) => s + b.price, 0),
+      status: 'paid',
+      createdAt: new Date().toISOString(),
+      paymentMethod: 'Card (simulated)'
+    };
+    setDb(d => ({ ...d, orders: [order, ...d.orders] }));
+    // Auto-release content for purchased books (in-app reading)
+    setDb(d => {
+      const rel = { ...(d.releases[user.id] || {}) };
+      cart.forEach(b => { rel[b.id] = { released: true, releasedAt: new Date().toISOString(), by: 'auto' }; });
+      return { ...d, releases: { ...d.releases, [user.id]: rel } };
+    });
+    setCart([]);
+    notify('Purchase successful! Books unlocked in My Library');
+    go('library');
+  }
+
+  /* Admin release PDF/content */
+  function adminRelease() {
+    if (!releaseForm.userId || !releaseForm.bookId) { notify('Select user and book'); return; }
+    setDb(d => {
+      const rel = { ...(d.releases[releaseForm.userId] || {}) };
+      rel[releaseForm.bookId] = {
+        released: true,
+        releasedAt: new Date().toISOString(),
+        by: 'admin',
+        note: releaseForm.note
+      };
+      return { ...d, releases: { ...d.releases, [releaseForm.userId]: rel } };
+    });
+    notify('Content released to user');
+    setReleaseForm({ userId: '', bookId: '', note: '' });
+  }
+
+  function adminAddBook(e) {
+    e.preventDefault();
+    const book = {
+      id: uid(),
+      title: newBook.title,
+      author: newBook.author,
+      category: newBook.category || 'General',
+      price: parseFloat(newBook.price) || 0,
+      cover: newBook.cover || '📘',
+      description: newBook.description,
+      pages: Math.max(10, Math.floor((newBook.content || '').length / 500)),
+      rating: 5,
+      content: newBook.content || '# ' + newBook.title + '\n\nContent pending.'
+    };
+    setDb(d => ({ ...d, books: [book, ...d.books] }));
+    setNewBook({ title: '', author: '', category: 'General', price: '', description: '', content: '', cover: '📘' });
+    notify('Book published');
+  }
+
+  function openReader(book) {
+    if (!user) return;
+    const released = releasedForUser[book.id]?.released;
+    if (!ownedBookIds.has(book.id) || !released) {
+      notify('This book is not released for reading yet');
+      return;
+    }
+    setReaderBook(book);
+    go('reader');
+  }
+
+  async function runAI(mode) {
+    setLoading(true);
+    setAiOut('');
+    try {
+      let prompt = aiInput;
+      if (mode === 'summary' && readerBook) prompt = `Summarize this book content for a student:\n\n${readerBook.content.slice(0, 6000)}`;
+      if (mode === 'quiz' && readerBook) prompt = `Create 5 short quiz questions with answers from:\n\n${readerBook.content.slice(0, 6000)}`;
+      if (mode === 'explain') prompt = `Explain clearly for a student:\n${aiInput || readerBook?.title || 'study skills'}`;
+      const text = await geminiGenerate(prompt, 'You are StudyVault AI, an expert tutor.');
+      setAiOut(text);
+    } catch (err) {
+      setAiOut('Error: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /* ===== LAYOUTS ===== */
+  const Nav = () => (
+    <header className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-slate-200">
+      <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
+        <button onClick={() => go(session ? (isAdmin ? 'admin' : 'dashboard') : 'home')} className="flex items-center gap-2 font-bold text-brand-900">
+          <Logo size="sm" />
+          <span className="hidden sm:inline">{APP_CONFIG.APP_NAME}</span>
+        </button>
+        <nav className="flex items-center gap-1 overflow-x-auto text-sm">
+          {!session && (
+            <>
+              <button onClick={() => go('store')} className="px-3 py-1.5 rounded-lg hover:bg-brand-50 text-slate-700">Bookstore</button>
+              <button onClick={() => go('about')} className="px-3 py-1.5 rounded-lg hover:bg-brand-50 text-slate-700">About</button>
+              <Btn size="sm" variant="ghost" onClick={() => go('login')}>Log in</Btn>
+              <Btn size="sm" onClick={() => go('signup')}>Sign up</Btn>
+            </>
+          )}
+          {session && !isAdmin && (
+            <>
+              <button onClick={() => go('dashboard')} className={`px-3 py-1.5 rounded-lg ${page==='dashboard'?'bg-brand-50 text-brand-700 font-semibold':'text-slate-600'}`}>Home</button>
+              <button onClick={() => go('store')} className={`px-3 py-1.5 rounded-lg ${page==='store'?'bg-brand-50 text-brand-700 font-semibold':'text-slate-600'}`}>Store</button>
+              <button onClick={() => go('library')} className={`px-3 py-1.5 rounded-lg ${page==='library'?'bg-brand-50 text-brand-700 font-semibold':'text-slate-600'}`}>Library</button>
+              <button onClick={() => go('tutor')} className={`px-3 py-1.5 rounded-lg ${page==='tutor'?'bg-brand-50 text-brand-700 font-semibold':'text-slate-600'}`}>AI Tutor</button>
+              <button onClick={() => go('cart')} className="px-3 py-1.5 rounded-lg text-slate-600 relative">
+                Cart{cart.length > 0 && <span className="ml-1 bg-brand-600 text-white text-[10px] px-1.5 rounded-full">{cart.length}</span>}
+              </button>
+              <Btn size="sm" variant="ghost" onClick={logout}>Logout</Btn>
+            </>
+          )}
+          {isAdmin && (
+            <>
+              <button onClick={() => go('admin')} className="px-3 py-1.5 rounded-lg bg-brand-50 text-brand-700 font-semibold">Admin</button>
+              <Btn size="sm" variant="ghost" onClick={logout}>Logout</Btn>
+            </>
+          )}
+        </nav>
+      </div>
+    </header>
+  );
+
+  /* HOME */
+  const Home = () => (
+    <div className="fade">
+      <section className="hero-bg text-white">
+        <div className="max-w-6xl mx-auto px-4 py-16 sm:py-24 grid lg:grid-cols-2 gap-10 items-center">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-brand-100 text-sm mb-5 border border-white/10">
+              Digital learning & bookstore platform
+            </div>
+            <h1 className="text-4xl sm:text-5xl font-extrabold leading-tight tracking-tight mb-4">
+              Buy books. Read in-app.<br />
+              <span className="text-brand-300">Master every subject.</span>
+            </h1>
+            <p className="text-brand-100 text-lg mb-8 max-w-lg">
+              StudyVault is a complete learning marketplace: purchase digital books, unlock in-app reading after purchase, study with an AI tutor, and track your progress — all in one secure platform.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Btn size="lg" onClick={() => go('signup')}>Create free account</Btn>
+              <Btn size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10" onClick={() => go('store')}>Browse bookstore</Btn>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {[
+              ['12k+', 'Study sessions'],
+              ['6+', 'Featured titles'],
+              ['AI', 'Tutor built-in'],
+              ['100%', 'In-app reading']
+            ].map(([a, b]) => (
+              <div key={b} className="rounded-2xl bg-white/5 border border-white/10 p-5 backdrop-blur">
+                <div className="text-2xl font-bold text-white">{a}</div>
+                <div className="text-sm text-brand-200">{b}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+      <section className="max-w-6xl mx-auto px-4 py-16">
+        <h2 className="text-2xl font-bold text-center mb-3 text-brand-950">Everything students and publishers need</h2>
+        <p className="text-center text-slate-500 mb-10 max-w-2xl mx-auto">From discovery and purchase to secure reading and AI-assisted study — designed as a production-grade learning product.</p>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {[
+            ['Bookstore', 'Browse curated academic titles by subject, price, and rating. Detailed descriptions help you choose the right resource.'],
+            ['Secure checkout', 'Simulated card checkout with instant order records. Purchased titles appear in your personal library.'],
+            ['In-app reader', 'Read only inside StudyVault after release. Content stays in your account — built for controlled digital distribution.'],
+            ['AI Tutor', 'Summaries, explanations, and practice questions grounded in your materials to reinforce understanding.'],
+            ['Progress hub', 'Dashboard with owned books, recent orders, and study activity at a glance.'],
+            ['Admin control', 'Full admin console for users, sales, catalog management, and manual content release.']
+          ].map(([t, d]) => (
+            <Card key={t} className="p-6 card-hover transition">
+              <div className="w-10 h-10 rounded-xl bg-brand-50 text-brand-700 flex items-center justify-center font-bold mb-3">◆</div>
+              <h3 className="font-bold text-brand-950 mb-2">{t}</h3>
+              <p className="text-sm text-slate-600 leading-relaxed">{d}</p>
+            </Card>
+          ))}
+        </div>
+      </section>
+      <section className="bg-brand-950 text-white py-14">
+        <div className="max-w-3xl mx-auto px-4 text-center">
+          <h2 className="text-2xl font-bold mb-3">Ready to start learning?</h2>
+          <p className="text-brand-200 mb-6">Join StudyVault, claim your library, and study with structure.</p>
+          <Btn size="lg" onClick={() => go('signup')}>Get started free</Btn>
+        </div>
+      </section>
+      <footer className="border-t py-8 text-center text-sm text-slate-500">
+        © {new Date().getFullYear()} StudyVault · Learn without limits
+      </footer>
+    </div>
+  );
+
+  /* AUTH */
+  const AuthPage = ({ mode }) => (
+    <div className="min-h-[80vh] flex items-center justify-center px-4 py-10 fade">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-6">
+          <Logo size="lg" />
+          <h1 className="text-2xl font-bold mt-4 text-brand-950">{mode === 'login' ? 'Welcome back' : 'Create your account'}</h1>
+          <p className="text-slate-500 text-sm mt-1">{mode === 'login' ? 'Sign in to your library and orders' : 'Start purchasing and reading in minutes'}</p>
+        </div>
+        <Card className="p-6">
+          <form onSubmit={mode === 'login' ? handleLogin : handleSignup} className="space-y-4">
+            {mode === 'signup' && (
+              <Input label="Full name" required value={authForm.name} onChange={e => setAuthForm(f => ({ ...f, name: e.target.value }))} />
+            )}
+            <Input label="Email" type="email" required value={authForm.email} onChange={e => setAuthForm(f => ({ ...f, email: e.target.value }))} />
+            <Input label="Password" type="password" required value={authForm.password} onChange={e => setAuthForm(f => ({ ...f, password: e.target.value }))} />
+            <Btn type="submit" className="w-full">{mode === 'login' ? 'Log in' : 'Sign up'}</Btn>
+          </form>
+          <p className="text-center text-sm text-slate-500 mt-4">
+            {mode === 'login' ? (
+              <>No account? <button className="text-brand-600 font-semibold" onClick={() => go('signup')}>Sign up</button></>
+            ) : (
+              <>Have an account? <button className="text-brand-600 font-semibold" onClick={() => go('login')}>Log in</button></>
+            )}
+          </p>
+        </Card>
+      </div>
+    </div>
+  );
+
+  /* STORE */
+  const Store = () => (
+    <div className="max-w-6xl mx-auto px-4 py-8 fade">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-extrabold text-brand-950">Bookstore</h1>
+          <p className="text-slate-500 mt-1">Academic digital books — purchase once, read in-app after unlock.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <input className="px-4 py-2 rounded-xl border border-slate-200 text-sm w-full sm:w-56" placeholder="Search books..." value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
+      </div>
+      <div className="flex gap-2 overflow-x-auto pb-4 mb-4">
+        {categories.map(c => (
+          <button key={c} onClick={() => setCatFilter(c)} className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap ${catFilter===c?'bg-brand-600 text-white':'bg-white border border-slate-200 text-slate-600'}`}>{c}</button>
+        ))}
+      </div>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        {filteredBooks.map(b => (
+          <Card key={b.id} className="overflow-hidden card-hover transition flex flex-col">
+            <div className="h-36 bg-gradient-to-br from-brand-800 to-brand-600 flex items-center justify-center text-5xl">{b.cover}</div>
+            <div className="p-5 flex flex-col flex-1">
+              <div className="flex items-start justify-between gap-2 mb-1">
+                <h3 className="font-bold text-brand-950 leading-snug">{b.title}</h3>
+                <Badge>{b.category}</Badge>
+              </div>
+              <p className="text-xs text-slate-500 mb-2">{b.author} · {b.pages} pages · ★ {b.rating}</p>
+              <p className="text-sm text-slate-600 line-clamp-3 mb-4 flex-1">{b.description}</p>
+              <div className="flex items-center justify-between">
+                <span className="text-lg font-extrabold text-brand-700">${b.price.toFixed(2)}</span>
+                <div className="flex gap-2">
+                  <Btn size="sm" variant="outline" onClick={() => { setSelectedBook(b); go('book'); }}>Details</Btn>
+                  <Btn size="sm" onClick={() => addToCart(b)}>Add</Btn>
+                </div>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+      {filteredBooks.length === 0 && <p className="text-center text-slate-500 py-16">No books match your search.</p>}
+    </div>
+  );
+
+  const BookDetail = () => {
+    if (!selectedBook) return null;
+    const b = selectedBook;
+    const owned = ownedBookIds.has(b.id);
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-8 fade">
+        <button className="text-sm text-brand-600 mb-4" onClick={() => go('store')}>← Back to store</button>
+        <Card className="overflow-hidden">
+          <div className="h-48 bg-gradient-to-br from-brand-900 to-brand-600 flex items-center justify-center text-7xl">{b.cover}</div>
+          <div className="p-6 sm:p-8">
+            <Badge>{b.category}</Badge>
+            <h1 className="text-3xl font-extrabold text-brand-950 mt-2 mb-1">{b.title}</h1>
+            <p className="text-slate-500 mb-4">By {b.author} · {b.pages} pages · Rating {b.rating}/5</p>
+            <p className="text-slate-700 leading-relaxed mb-6">{b.description}</p>
+            <div className="flex flex-wrap items-center gap-4">
+              <span className="text-3xl font-extrabold text-brand-700">${b.price.toFixed(2)}</span>
+              {owned ? (
+                <Btn onClick={() => openReader(b)}>Read in library</Btn>
+              ) : (
+                <Btn onClick={() => addToCart(b)}>Add to cart</Btn>
+              )}
+            </div>
+            <div className="mt-8 p-4 rounded-xl bg-brand-50 border border-brand-100 text-sm text-brand-900">
+              <strong>How reading works:</strong> After purchase, the book is unlocked for in-app reading only. You can open it anytime from <em>My Library</em>. Content is not offered as a public download link — it is delivered through your StudyVault account.
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  };
+
+  const CartPage = () => (
+    <div className="max-w-2xl mx-auto px-4 py-8 fade">
+      <h1 className="text-2xl font-bold mb-6">Your cart</h1>
+      {cart.length === 0 ? (
+        <Card className="p-10 text-center text-slate-500">Cart is empty. <button className="text-brand-600 font-semibold" onClick={() => go('store')}>Browse books</button></Card>
+      ) : (
+        <div className="space-y-4">
+          {cart.map(b => (
+            <Card key={b.id} className="p-4 flex items-center gap-4">
+              <div className="text-3xl">{b.cover}</div>
+              <div className="flex-1">
+                <div className="font-semibold">{b.title}</div>
+                <div className="text-sm text-slate-500">${b.price.toFixed(2)}</div>
+              </div>
+              <Btn size="sm" variant="ghost" onClick={() => setCart(c => c.filter(x => x.id !== b.id))}>Remove</Btn>
+            </Card>
+          ))}
+          <Card className="p-5">
+            <div className="flex justify-between font-bold text-lg mb-4">
+              <span>Total</span>
+              <span className="text-brand-700">${cart.reduce((s, b) => s + b.price, 0).toFixed(2)}</span>
+            </div>
+            <p className="text-xs text-slate-500 mb-4">Payment is simulated for this platform demo. On success, books unlock in My Library for in-app reading.</p>
+            <Btn className="w-full" onClick={checkout}>Pay & unlock books</Btn>
+          </Card>
+        </div>
+      )}
+    </div>
+  );
+
+  const Library = () => {
+    const owned = db.books.filter(b => ownedBookIds.has(b.id));
+    return (
+      <div className="max-w-6xl mx-auto px-4 py-8 fade">
+        <h1 className="text-2xl font-bold mb-2">My Library</h1>
+        <p className="text-slate-500 mb-6">Purchased books available for in-app reading after release.</p>
+        {owned.length === 0 ? (
+          <Card className="p-10 text-center text-slate-500">No books yet. <button className="text-brand-600 font-semibold" onClick={() => go('store')}>Visit the store</button></Card>
+        ) : (
+          <div className="grid sm:grid-cols-2 gap-4">
+            {owned.map(b => {
+              const rel = releasedForUser[b.id];
+              return (
+                <Card key={b.id} className="p-5 flex gap-4">
+                  <div className="text-4xl">{b.cover}</div>
+                  <div className="flex-1">
+                    <h3 className="font-bold">{b.title}</h3>
+                    <p className="text-xs text-slate-500 mb-2">{b.author}</p>
+                    {rel?.released ? (
+                      <Btn size="sm" onClick={() => openReader(b)}>Read now</Btn>
+                    ) : (
+                      <Badge color="amber">Awaiting admin release</Badge>
+                    )}
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const Reader = () => {
+    if (!readerBook) return null;
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-6 fade">
+        <div className="flex items-center justify-between mb-4 gap-2">
+          <button className="text-sm text-brand-600" onClick={() => go('library')}>← Library</button>
+          <Badge color="blue">In-app reading only</Badge>
+        </div>
+        <Card className="p-6 sm:p-10 reader-page">
+          <h1 className="text-2xl font-extrabold text-brand-950 mb-1">{readerBook.title}</h1>
+          <p className="text-sm text-slate-500 mb-8">{readerBook.author}</p>
+          <div className="prose prose-slate max-w-none text-slate-800 leading-relaxed whitespace-pre-wrap text-[15px]">
+            {readerBook.content}
+          </div>
+        </Card>
+        <div className="mt-4 flex gap-2">
+          <Btn variant="soft" onClick={() => { setAiInput(''); go('tutor'); }}>Ask AI about this book</Btn>
+        </div>
+      </div>
+    );
+  };
+
+  const Dashboard = () => (
+    <div className="max-w-6xl mx-auto px-4 py-8 fade">
+      <h1 className="text-2xl font-bold mb-1">Hello, {user?.name?.split(' ')[0] || 'Learner'}</h1>
+      <p className="text-slate-500 mb-6">Your StudyVault overview</p>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+        {[
+          [ownedBookIds.size, 'Books owned'],
+          [userOrders.length, 'Orders'],
+          [Object.values(releasedForUser).filter(r => r.released).length, 'Readable now'],
+          [cart.length, 'In cart']
+        ].map(([v, l]) => (
+          <Card key={l} className="p-4 text-center">
+            <div className="text-2xl font-extrabold text-brand-700">{v}</div>
+            <div className="text-xs text-slate-500">{l}</div>
+          </Card>
+        ))}
+      </div>
+      <div className="grid lg:grid-cols-2 gap-5">
+        <Card className="p-5">
+          <h2 className="font-bold mb-3">Quick actions</h2>
+          <div className="flex flex-wrap gap-2">
+            <Btn onClick={() => go('store')}>Browse store</Btn>
+            <Btn variant="outline" onClick={() => go('library')}>Open library</Btn>
+            <Btn variant="soft" onClick={() => go('tutor')}>AI Tutor</Btn>
+          </div>
+        </Card>
+        <Card className="p-5">
+          <h2 className="font-bold mb-3">Recent orders</h2>
+          {userOrders.slice(0, 3).length === 0 ? <p className="text-sm text-slate-500">No purchases yet.</p> : (
+            userOrders.slice(0, 3).map(o => (
+              <div key={o.id} className="text-sm py-2 border-b border-slate-100 last:border-0 flex justify-between">
+                <span>{o.items.map(i => i.title).join(', ')}</span>
+                <span className="font-semibold text-brand-700">${o.total.toFixed(2)}</span>
+              </div>
+            ))
+          )}
+        </Card>
+      </div>
+    </div>
+  );
+
+  const Tutor = () => (
+    <div className="max-w-3xl mx-auto px-4 py-8 fade">
+      <h1 className="text-2xl font-bold mb-2">AI Tutor</h1>
+      <p className="text-slate-500 mb-6">Ask for explanations, summaries, or practice questions powered by Gemini (configured on the server).</p>
+      <Card className="p-5 space-y-4">
+        <Textarea label="Your question or topic" placeholder="e.g. Explain mitochondria simply" value={aiInput} onChange={e => setAiInput(e.target.value)} />
+        <div className="flex flex-wrap gap-2">
+          <Btn onClick={() => runAI('explain')} disabled={loading}>{loading ? 'Thinking…' : 'Explain'}</Btn>
+          <Btn variant="outline" onClick={() => runAI('summary')} disabled={loading || !readerBook}>Summarize open book</Btn>
+          <Btn variant="soft" onClick={() => runAI('quiz')} disabled={loading || !readerBook}>Quiz from open book</Btn>
+        </div>
+        {aiOut && (
+          <div className="mt-4 p-4 rounded-xl bg-slate-50 border border-slate-200 text-sm whitespace-pre-wrap leading-relaxed">{aiOut}</div>
+        )}
+      </Card>
+    </div>
+  );
+
+  /* ADMIN */
+  const Admin = () => {
+    const revenue = db.orders.filter(o => o.status === 'paid').reduce((s, o) => s + o.total, 0);
+    return (
+      <div className="max-w-6xl mx-auto px-4 py-8 fade">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+          <div>
+            <h1 className="text-2xl font-extrabold text-brand-950">Admin Console</h1>
+            <p className="text-slate-500 text-sm">Users, sales, catalog, and content release</p>
+          </div>
+          <Badge color="blue">Administrator</Badge>
+        </div>
+        <div className="flex gap-2 overflow-x-auto mb-6">
+          {['overview', 'users', 'orders', 'books', 'release'].map(t => (
+            <button key={t} onClick={() => setAdminTab(t)} className={`px-4 py-2 rounded-xl text-sm font-semibold capitalize ${adminTab===t?'bg-brand-600 text-white':'bg-white border border-slate-200'}`}>{t}</button>
+          ))}
+        </div>
+
+        {adminTab === 'overview' && (
+          <div className="space-y-5">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {[
+                [db.users.length, 'Registered users'],
+                [db.orders.length, 'Total orders'],
+                ['$' + revenue.toFixed(2), 'Gross revenue'],
+                [db.books.length, 'Catalog titles']
+              ].map(([v, l]) => (
+                <Card key={l} className="p-5">
+                  <div className="text-2xl font-extrabold text-brand-800">{v}</div>
+                  <div className="text-xs text-slate-500 mt-1">{l}</div>
+                </Card>
+              ))}
+            </div>
+            <Card className="p-5">
+              <h2 className="font-bold mb-3">Platform notes</h2>
+              <ul className="text-sm text-slate-600 space-y-2 list-disc pl-5">
+                <li>New signups appear under Users with email and last login.</li>
+                <li>Successful checkouts create paid orders and auto-release reading access.</li>
+                <li>Use the Release tab to manually grant or re-confirm book access for any user.</li>
+                <li>Publish new titles under Books with full in-app chapter content.</li>
+              </ul>
+            </Card>
+          </div>
+        )}
+
+        {adminTab === 'users' && (
+          <Card className="overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-brand-50 text-brand-900">
+                  <tr>
+                    <th className="text-left p-3">Name</th>
+                    <th className="text-left p-3">Email</th>
+                    <th className="text-left p-3">Joined</th>
+                    <th className="text-left p-3">Last login</th>
+                    <th className="text-left p-3">Orders</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {db.users.length === 0 && <tr><td colSpan={5} className="p-6 text-center text-slate-500">No users yet</td></tr>}
+                  {db.users.map(u => (
+                    <tr key={u.id} className="border-t border-slate-100">
+                      <td className="p-3 font-medium">{u.name}</td>
+                      <td className="p-3">{u.email}</td>
+                      <td className="p-3 text-slate-500">{new Date(u.createdAt).toLocaleDateString()}</td>
+                      <td className="p-3 text-slate-500">{u.lastLogin ? new Date(u.lastLogin).toLocaleString() : '—'}</td>
+                      <td className="p-3">{db.orders.filter(o => o.userId === u.id).length}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        )}
+
+        {adminTab === 'orders' && (
+          <div className="space-y-3">
+            {db.orders.length === 0 && <Card className="p-8 text-center text-slate-500">No orders yet</Card>}
+            {db.orders.map(o => (
+              <Card key={o.id} className="p-5">
+                <div className="flex flex-wrap justify-between gap-2 mb-2">
+                  <div>
+                    <div className="font-bold">{o.userName} <span className="font-normal text-slate-500">({o.userEmail})</span></div>
+                    <div className="text-xs text-slate-500">{new Date(o.createdAt).toLocaleString()} · {o.paymentMethod}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-extrabold text-brand-700">${o.total.toFixed(2)}</div>
+                    <Badge color="green">{o.status}</Badge>
+                  </div>
+                </div>
+                <ul className="text-sm text-slate-700">
+                  {o.items.map((i, idx) => <li key={idx}>• {i.title} — ${i.price.toFixed(2)}</li>)}
+                </ul>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {adminTab === 'books' && (
+          <div className="grid lg:grid-cols-2 gap-6">
+            <Card className="p-5">
+              <h2 className="font-bold mb-4">Publish new book</h2>
+              <form onSubmit={adminAddBook} className="space-y-3">
+                <Input label="Title" required value={newBook.title} onChange={e => setNewBook(b => ({ ...b, title: e.target.value }))} />
+                <Input label="Author" required value={newBook.author} onChange={e => setNewBook(b => ({ ...b, author: e.target.value }))} />
+                <Input label="Category" value={newBook.category} onChange={e => setNewBook(b => ({ ...b, category: e.target.value }))} />
+                <Input label="Price (USD)" type="number" step="0.01" required value={newBook.price} onChange={e => setNewBook(b => ({ ...b, price: e.target.value }))} />
+                <Input label="Cover emoji" value={newBook.cover} onChange={e => setNewBook(b => ({ ...b, cover: e.target.value }))} />
+                <Textarea label="Description" required value={newBook.description} onChange={e => setNewBook(b => ({ ...b, description: e.target.value }))} />
+                <Textarea label="Full book content (markdown/text for in-app reader)" required value={newBook.content} onChange={e => setNewBook(b => ({ ...b, content: e.target.value }))} className="min-h-[160px]" />
+                <Btn type="submit" className="w-full">Publish book</Btn>
+              </form>
+            </Card>
+            <div className="space-y-3 max-h-[70vh] overflow-y-auto">
+              {db.books.map(b => (
+                <Card key={b.id} className="p-4 flex gap-3">
+                  <div className="text-2xl">{b.cover}</div>
+                  <div>
+                    <div className="font-semibold">{b.title}</div>
+                    <div className="text-xs text-slate-500">{b.author} · ${b.price.toFixed(2)} · {b.category}</div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {adminTab === 'release' && (
+          <Card className="p-6 max-w-xl">
+            <h2 className="font-bold mb-2">Release reading access</h2>
+            <p className="text-sm text-slate-500 mb-4">Grant or re-confirm in-app reading for a purchased (or gifted) title. Users can only read inside StudyVault.</p>
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-medium">User</label>
+                <select className="mt-1 w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm" value={releaseForm.userId} onChange={e => setReleaseForm(f => ({ ...f, userId: e.target.value }))}>
+                  <option value="">Select user…</option>
+                  {db.users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.email})</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Book</label>
+                <select className="mt-1 w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm" value={releaseForm.bookId} onChange={e => setReleaseForm(f => ({ ...f, bookId: e.target.value }))}>
+                  <option value="">Select book…</option>
+                  {db.books.map(b => <option key={b.id} value={b.id}>{b.title}</option>)}
+                </select>
+              </div>
+              <Input label="Internal note (optional)" value={releaseForm.note} onChange={e => setReleaseForm(f => ({ ...f, note: e.target.value }))} />
+              <Btn onClick={adminRelease}>Release to user</Btn>
+            </div>
+            <div className="mt-8">
+              <h3 className="font-semibold text-sm mb-2">Current releases</h3>
+              {Object.keys(db.releases).length === 0 && <p className="text-sm text-slate-500">None yet</p>}
+              {Object.entries(db.releases).map(([uid, books]) => {
+                const u = db.users.find(x => x.id === uid);
+                return (
+                  <div key={uid} className="text-sm py-2 border-t border-slate-100">
+                    <div className="font-medium">{u?.name || uid}</div>
+                    {Object.entries(books).map(([bid, info]) => {
+                      const b = db.books.find(x => x.id === bid);
+                      return <div key={bid} className="text-slate-500 pl-2">→ {b?.title || bid} {info.released ? '✓' : ''} {info.by === 'admin' ? '(admin)' : '(auto)'}</div>;
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        )}
+      </div>
+    );
+  };
+
+  const About = () => (
+    <div className="max-w-3xl mx-auto px-4 py-12 fade prose prose-slate">
+      <h1 className="text-3xl font-extrabold text-brand-950 mb-4">About StudyVault</h1>
+      <p className="text-slate-600 leading-relaxed mb-4">
+        StudyVault is a digital learning and bookstore platform built for students and educators. Browse academic titles, purchase securely, and read exclusively inside the application after access is released to your account.
+      </p>
+      <p className="text-slate-600 leading-relaxed mb-4">
+        The product combines commerce, access control, an in-app reader, and an AI study assistant so learning resources stay organized in one place.
+      </p>
+      <h2 className="text-xl font-bold mt-8 mb-2">For administrators</h2>
+      <p className="text-slate-600">The admin console provides live visibility into signups, orders, revenue, catalog publishing, and per-user content release — supporting operational control over digital distribution.</p>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      {Nav()}
+      <div className="flex-1">
+        {page === 'home' && Home()}
+        {page === 'login' && AuthPage({ mode: 'login' })}
+        {page === 'signup' && AuthPage({ mode: 'signup' })}
+        {page === 'store' && Store()}
+        {page === 'book' && BookDetail()}
+        {page === 'cart' && CartPage()}
+        {page === 'library' && Library()}
+        {page === 'reader' && Reader()}
+        {page === 'dashboard' && Dashboard()}
+        {page === 'tutor' && Tutor()}
+        {page === 'admin' && isAdmin && Admin()}
+        {page === 'about' && About()}
+        {page === 'admin' && !isAdmin && <div className="p-10 text-center">Access denied</div>}
+      </div>
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-brand-950 text-white px-5 py-3 rounded-xl text-sm shadow-xl fade max-w-[90vw]">{toast}</div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
